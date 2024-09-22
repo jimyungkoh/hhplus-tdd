@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
+import { UserNotFoundException } from './exception/user-not-found.exception';
 import { UserPoint } from './model/point.model';
 
 @Injectable()
@@ -15,8 +16,15 @@ export class PointService {
   ) {}
 
   // TODO: 포인트 조회 기능 구현
-  getPointBy(userId: number): Promise<UserPoint> {
-    return this.userPointRepository.selectById(userId);
+  async getPointBy(userId: number): Promise<UserPoint> {
+    try {
+      const userPoint = await this.userPointRepository.selectById(userId);
+      return userPoint;
+    } catch (e) {
+      if (e.message === '올바르지 않은 ID 값 입니다.')
+        throw new UserNotFoundException();
+      throw e;
+    }
   }
 
   // TODO: 포인트 내역 조회 기능 구현

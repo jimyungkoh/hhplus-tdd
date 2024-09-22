@@ -2,6 +2,7 @@ import { MockFactory, Test, TestingModule } from '@nestjs/testing';
 import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
+import { UserNotFoundException } from '../exception/user-not-found.exception';
 import { UserPoint } from '../model/point.model';
 import { PointService } from '../point.service';
 import pointHistoryRepositoryMock from './pointhistory.repository.mock';
@@ -37,7 +38,6 @@ describe('PointService', () => {
     jest.clearAllMocks();
   });
 
-  // TODO: 포인트 조회 기능 테스트 작성
   describe('[getPointBy] 포인트 조회 기능 테스트', () => {
     test('존재하는 사용자 id에 대한 포인트 조회는 성공한다', () => {
       // given
@@ -56,6 +56,26 @@ describe('PointService', () => {
 
       // then
       expect(result).resolves.toEqual(expected);
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
+    });
+
+    test(`존재하지 않는 사용자 id에 대한 포인트 조회는
+        UserNotFoundException 예외를 발생시킨다`, () => {
+      // given
+      const userId = 2;
+
+      userPointRepository.selectById.mockRejectedValue(
+        new Error('올바르지 않은 ID 값 입니다.'),
+      );
+
+      // when
+      const result = service.getPointBy(userId);
+
+      // then
+      expect(result).rejects.toBeInstanceOf(UserNotFoundException);
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
     });
   });
 
