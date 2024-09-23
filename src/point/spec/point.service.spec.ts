@@ -4,7 +4,13 @@ import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.r
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
 import { InvalidChargeAmountException } from '../exception/invalid-charge-amount.exception';
 import { InvalidUserIdException } from '../exception/invalid-user-id.exception';
-import { PointHistory, TransactionType, UserPoint } from '../model/point.model';
+import {
+  PointHistory,
+  PointHistoryVo,
+  TransactionType,
+  UserPoint,
+  UserPointVo,
+} from '../model/point.model';
 import { PointService } from '../point.service';
 import pointHistoryRepositoryMock from './pointhistory.repository.mock';
 import userPointRepositoryMock from './userpoint.repository.mock';
@@ -44,11 +50,7 @@ describe('PointService', () => {
       // given
       const userId = 1;
 
-      const userPointStub: UserPoint = {
-        id: 1,
-        point: 1000,
-        updateMillis: Date.now(),
-      };
+      const userPointStub: UserPoint = new UserPointVo(1, 1000);
       userPointRepository.selectById.mockResolvedValue(userPointStub);
 
       // when
@@ -77,25 +79,14 @@ describe('PointService', () => {
 
   // TODO: 포인트 내역 조회 기능 테스트 작성
   describe('[findHistoryBy] 포인트 내역 조회 기능 테스트', () => {
-    const createHistoryStub = (
-      partialData: Partial<PointHistory>,
-    ): PointHistory => ({
-      id: 1,
-      userId: 1,
-      amount: 1000,
-      type: TransactionType.CHARGE,
-      timeMillis: Date.now(),
-      ...partialData,
-    });
-
     test(`사용자 id에 대응하는 포인트 내역이 있는 경우,
           모든 포인트 내역을 반환해야 한다.`, () => {
       // given
       const historyStub: PointHistory[] = [
-        { id: 1 },
-        { id: 2, amount: 500, type: TransactionType.USE },
-        { id: 3, amount: 300, type: TransactionType.CHARGE },
-      ].map(createHistoryStub);
+        new PointHistoryVo(1, 1, TransactionType.CHARGE, 1000),
+        new PointHistoryVo(2, 1, TransactionType.USE, 500),
+        new PointHistoryVo(3, 1, TransactionType.CHARGE, 300),
+      ];
       const userId = 1;
       pointHistoryRepository.selectAllByUserId.mockResolvedValue(historyStub);
 
@@ -155,16 +146,9 @@ describe('PointService', () => {
       const initialPoint = 1000;
       const chargeAmount = 1000;
       const updatedPoint = initialPoint + chargeAmount;
-      const getDateNow = () => Date.now();
 
-      const createUserPointStub = (point: number): UserPoint => ({
-        id: userId,
-        point,
-        updateMillis: getDateNow(),
-      });
-
-      const initialUserPointStub = createUserPointStub(initialPoint);
-      const updatedUserPointStub = createUserPointStub(updatedPoint);
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+      const updatedUserPointStub = new UserPointVo(userId, updatedPoint);
 
       userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
       userPointRepository.insertOrUpdate.mockResolvedValue(
