@@ -28,7 +28,7 @@ export class PointService {
   }
 
   // TODO: 포인트 내역 조회 기능 구현
-  getHistoryBy(userId: number): Promise<PointHistory[]> {
+  findHistoryBy(userId: number): Promise<PointHistory[]> {
     return this.pointHistoryRepository.selectAllByUserId(userId);
   }
 
