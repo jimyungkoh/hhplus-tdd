@@ -129,6 +129,19 @@ describe('PointService', () => {
       );
       expect(pointHistoryRepository.selectAllByUserId).toHaveBeenCalledTimes(1);
     });
+
+    test(`유효하지 않은 사용자 id에 대한 포인트 내역 조회는
+          InvalidUserIdException 예외를 발생시킨다`, () => {
+      // given
+      const userId = -1;
+
+      // when
+      const result = service.findHistoryBy(userId);
+
+      // then
+      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
+      expect(pointHistoryRepository.selectAllByUserId).not.toHaveBeenCalled();
+    });
   });
 
   // TODO: 포인트 충전 기능 테스트 작성
