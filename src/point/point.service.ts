@@ -38,6 +38,24 @@ export class PointService {
 
   // TODO: 포인트 충전 기능 구현
   charge() {}
+  async charge(userId: number, amount: number): Promise<UserPoint> {
+
+    const { point } = await this.userPointRepository.selectById(userId);
+
+    const chargeProcessPromises = Promise.all([
+      this.userPointRepository.insertOrUpdate(userId, point + amount),
+      this.pointHistoryRepository.insert(
+        userId,
+        amount,
+        TransactionType.CHARGE,
+        Date.now(),
+      ),
+    ]);
+
+    const [chargedPoint, _] = await chargeProcessPromises;
+
+    return chargedPoint;
+  }
 
   // TODO: 포인트 사용 기능 구현
   use() {}

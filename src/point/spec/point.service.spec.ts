@@ -145,7 +145,56 @@ describe('PointService', () => {
   });
 
   // TODO: 포인트 충전 기능 테스트 작성
-  describe('[charge] 포인트 충전 기능 테스트', () => {});
+  describe('[charge] 포인트 충전 기능 테스트', () => {
+    test(`포인트 충전 액수가 양수인 경우
+          1. 기존 포인트에 충전 포인트를 더한 값을 저장한다.
+          2. 포인트 내역에 포인트 충전 기록을 저장한다.
+          3. 기존 포인트에 충전 포인트를 더한 UserPoint 객체를 반환한다.`, async () => {
+      // given
+      const userId = 1;
+      const initialPoint = 1000;
+      const chargeAmount = 1000;
+      const updatedPoint = initialPoint + chargeAmount;
+      const getDateNow = () => Date.now();
+
+      const createUserPointStub = (point: number): UserPoint => ({
+        id: userId,
+        point,
+        updateMillis: getDateNow(),
+      });
+
+      const initialUserPointStub = createUserPointStub(initialPoint);
+      const updatedUserPointStub = createUserPointStub(updatedPoint);
+
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
+      userPointRepository.insertOrUpdate.mockResolvedValue(
+        updatedUserPointStub,
+      );
+
+      // when
+      const result = await service.charge(userId, chargeAmount);
+      const expected = updatedUserPointStub;
+
+      // then
+      //  검증 - 1-1: 기존 포인트 조회가 호출되었는가?
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      //  검증 - 1-2: 기존 포인트에 충전 포인트를 더한 값이 저장되는가?
+      expect(userPointRepository.insertOrUpdate).toHaveBeenCalledWith(
+        userId,
+        updatedPoint,
+      );
+      //  검증 - 2. 포인트 내역에 포인트 충전 기록을 저장하는가?
+      expect(pointHistoryRepository.insert).toHaveBeenCalledWith(
+        userId,
+        chargeAmount,
+        TransactionType.CHARGE,
+        expect.any(Number),
+      );
+      //  검증 - 3: 기존 포인트에 충전 포인트를 더한 UserPoint 객체가 반환되었는가?
+      expect(result).toEqual(expected);
+    });
+
+  });
 
   // TODO: 포인트 사용 기능 테스트 작성
   describe('[use] 포인트 사용 기능 테스트', () => {});
