@@ -194,6 +194,21 @@ describe('PointService', () => {
       expect(result).toEqual(expected);
     });
 
+    test(`유효하지 않은 사용자 id에 대한 포인트 충전은
+          InvalidUserIdException 예외를 발생시킨다`, () => {
+      // given
+      const userId = -1;
+      const amount = 1000;
+
+      // when
+      const result = service.charge(userId, amount);
+
+      // then
+      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
+      expect(userPointRepository.selectById).not.toHaveBeenCalled();
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
   });
 
   // TODO: 포인트 사용 기능 테스트 작성

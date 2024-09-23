@@ -37,8 +37,10 @@ export class PointService {
   }
 
   // TODO: 포인트 충전 기능 구현
-  charge() {}
   async charge(userId: number, amount: number): Promise<UserPoint> {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new InvalidUserIdException();
+    }
 
     const { point } = await this.userPointRepository.selectById(userId);
 
