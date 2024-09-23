@@ -80,7 +80,7 @@ describe('PointService', () => {
   });
 
   // TODO: 포인트 내역 조회 기능 테스트 작성
-  describe('[getHistoryBy] 포인트 내역 조회 기능 테스트', () => {
+  describe('[findHistoryBy] 포인트 내역 조회 기능 테스트', () => {
     const createHistoryStub = (
       partialData: Partial<PointHistory>,
     ): PointHistory => ({
@@ -92,8 +92,8 @@ describe('PointService', () => {
       ...partialData,
     });
 
-    test(`사용자 id가 존재하고 포인트 내역이 있는 경우,
-          해당 사용자의 모든 포인트 내역을 반환해야 한다.`, () => {
+    test(`사용자 id에 대응하는 포인트 내역이 있는 경우,
+          모든 포인트 내역을 반환해야 한다.`, () => {
       // given
       const historyStub: PointHistory[] = [
         { id: 1 },
@@ -104,7 +104,26 @@ describe('PointService', () => {
       pointHistoryRepository.selectAllByUserId.mockResolvedValue(historyStub);
 
       //when
-      const result = service.getHistoryBy(userId);
+      const result = service.findHistoryBy(userId);
+      const expected = historyStub;
+
+      //then
+      expect(result).resolves.toEqual(expected);
+      expect(pointHistoryRepository.selectAllByUserId).toHaveBeenCalledWith(
+        userId,
+      );
+      expect(pointHistoryRepository.selectAllByUserId).toHaveBeenCalledTimes(1);
+    });
+
+    test(`사용자 id에 대응하는 포인트 내역이 없는 경우,
+          빈 배열을 반환해야 한다.`, () => {
+      // given
+      const historyStub: PointHistory[] = [];
+      const userId = 2;
+      pointHistoryRepository.selectAllByUserId.mockResolvedValue(historyStub);
+
+      //when
+      const result = service.findHistoryBy(userId);
       const expected = historyStub;
 
       //then
