@@ -3,7 +3,7 @@ import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
 import { UserNotFoundException } from './exception/user-not-found.exception';
-import { UserPoint } from './model/point.model';
+import { PointHistory, UserPoint } from './model/point.model';
 
 @Injectable()
 export class PointService {
@@ -28,7 +28,9 @@ export class PointService {
   }
 
   // TODO: 포인트 내역 조회 기능 구현
-  getHistoryBy(userId: number) {}
+  getHistoryBy(userId: number): Promise<PointHistory[]> {
+    return this.pointHistoryRepository.selectAllByUserId(userId);
+  }
 
   // TODO: 포인트 충전 기능 구현
   charge() {}
