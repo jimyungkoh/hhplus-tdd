@@ -40,6 +40,8 @@ export class PointService {
   async charge(userId: number, amount: number): Promise<UserPoint> {
     if (!Number.isInteger(userId) || userId <= 0) {
       throw new InvalidUserIdException();
+    } else if (amount <= 0) {
+      throw new InvalidChargeAmountException();
     }
 
     const { point } = await this.userPointRepository.selectById(userId);

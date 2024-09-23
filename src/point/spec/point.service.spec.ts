@@ -209,6 +209,36 @@ describe('PointService', () => {
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
+
+    test(`포인트 충전 액수가 음수인 경우
+          InvalidChargeAmountException이 발생해야 한다.`, () => {
+      // given
+      const userId = 1;
+      const chargeAmount = -1000;
+
+      // when
+      const result = service.charge(userId, chargeAmount);
+
+      // then
+      expect(result).rejects.toBeInstanceOf(InvalidChargeAmountException);
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
+
+    test(`포인트 충전 액수가 0인 경우
+          InvalidChargeAmountException이 발생해야 한다.`, () => {
+      // given
+      const userId = 1;
+      const chargeAmount = 0;
+
+      // when
+      const result = service.charge(userId, chargeAmount);
+
+      // then
+      expect(result).rejects.toBeInstanceOf(InvalidChargeAmountException);
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
   });
 
   // TODO: 포인트 사용 기능 테스트 작성
