@@ -2,7 +2,8 @@ import { MockFactory, Test, TestingModule } from '@nestjs/testing';
 import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
-import { UserNotFoundException } from '../exception/user-not-found.exception';
+import { InvalidChargeAmountException } from '../exception/invalid-charge-amount.exception';
+import { InvalidUserIdException } from '../exception/invalid-user-id.exception';
 import { PointHistory, TransactionType, UserPoint } from '../model/point.model';
 import { PointService } from '../point.service';
 import pointHistoryRepositoryMock from './pointhistory.repository.mock';
@@ -63,19 +64,14 @@ describe('PointService', () => {
     test(`유효하지 않은 사용자 id에 대한 포인트 조회는
         InvalidUserIdException 예외를 발생시킨다`, () => {
       // given
-      const userId = 2;
-
-      userPointRepository.selectById.mockRejectedValue(
-        new Error('올바르지 않은 ID 값 입니다.'),
-      );
+      const userId = -1;
 
       // when
       const result = service.getPointBy(userId);
 
       // then
       expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
-      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
-      expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
+      expect(userPointRepository.selectById).not.toHaveBeenCalled();
     });
   });
 
