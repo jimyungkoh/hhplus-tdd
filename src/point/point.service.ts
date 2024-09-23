@@ -29,6 +29,10 @@ export class PointService {
 
   // TODO: 포인트 내역 조회 기능 구현
   async findHistoryBy(userId: number): Promise<PointHistory[]> {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new InvalidUserIdException();
+    }
+
     return await this.pointHistoryRepository.selectAllByUserId(userId);
   }
 
