@@ -60,8 +60,8 @@ describe('PointService', () => {
       expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
     });
 
-    test(`존재하지 않는 사용자 id에 대한 포인트 조회는
-        UserNotFoundException 예외를 발생시킨다`, () => {
+    test(`유효하지 않은 사용자 id에 대한 포인트 조회는
+        InvalidUserIdException 예외를 발생시킨다`, () => {
       // given
       const userId = 2;
 
@@ -73,7 +73,7 @@ describe('PointService', () => {
       const result = service.getPointBy(userId);
 
       // then
-      expect(result).rejects.toBeInstanceOf(UserNotFoundException);
+      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
       expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
       expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
     });

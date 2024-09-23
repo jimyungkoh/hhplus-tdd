@@ -5,8 +5,13 @@ export class ErrorCodes {
   ) {}
 
   // Point
-  static readonly USER_NOT_FOUND = new ErrorCodes(
-    404,
-    '존재하지 않는 사용자입니다',
+  static readonly INVALID_USER_ID = new ErrorCodes(
+    400,
+    '유효하지 않은 사용자 ID 입니다',
+  );
+
+  static readonly INVALID_CHARGE_AMOUNT = new ErrorCodes(
+    400,
+    '충전 금액은 0보다 커야 합니다',
   );
 }

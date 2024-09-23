@@ -22,7 +22,7 @@ export class PointService {
       return userPoint;
     } catch (e) {
       if (e.message === '올바르지 않은 ID 값 입니다.')
-        throw new UserNotFoundException();
+        throw new InvalidUserIdException();
       throw e;
     }
   }
