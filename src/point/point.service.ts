@@ -62,5 +62,26 @@ export class PointService {
   }
 
   // TODO: 포인트 사용 기능 구현
-  use() {}
+  async use(userId: number, amount: number): Promise<UserPoint> {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new InvalidUserIdException();
+    } else if (amount <= 0) {
+      throw new InvalidUseAmountException();
+    }
+
+    const { point } = await this.userPointRepository.selectById(userId);
+    const consumeProcessPromises = Promise.all([
+      this.userPointRepository.insertOrUpdate(userId, point - amount),
+      this.pointHistoryRepository.insert(
+        userId,
+        amount,
+        TransactionType.USE,
+        Date.now(),
+      ),
+    ]);
+
+    const [consumedPoint, _] = await consumeProcessPromises;
+
+    return consumedPoint;
+  }
 }

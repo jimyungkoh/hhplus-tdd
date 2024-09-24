@@ -226,5 +226,23 @@ describe('PointService', () => {
   });
 
   // TODO: 포인트 사용 기능 테스트 작성
-  describe('[use] 포인트 사용 기능 테스트', () => {});
+  describe('[use] 포인트 사용 기능 테스트', () => {
+    test(`유효하지 않은 사용자 id에 대한 포인트 사용은
+          InvalidUserIdException 예외를 발생시킨다`, () => {
+      // given
+      const userId = -1;
+      const amount = 1_000;
+
+      // when
+      const result = service.use(userId, amount);
+
+      // then
+      // 검증 - 1: InvalidUserIdException 예외가 발생했는가?
+      expect(result).rejects.toThrow(InvalidUserIdException);
+      // 검증 - 2: 포인트 조회, 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
+      expect(userPointRepository.selectById).not.toHaveBeenCalled();
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
+  });
 });
