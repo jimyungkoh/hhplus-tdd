@@ -72,7 +72,7 @@ describe('PointService', () => {
       const result = service.getPointBy(userId);
 
       // then
-      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
+      expect(result).rejects.toThrow(InvalidUserIdException);
       expect(userPointRepository.selectById).not.toHaveBeenCalled();
     });
   });
@@ -130,7 +130,7 @@ describe('PointService', () => {
       const result = service.findHistoryBy(userId);
 
       // then
-      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
+      expect(result).rejects.toThrow(InvalidUserIdException);
       expect(pointHistoryRepository.selectAllByUserId).not.toHaveBeenCalled();
     });
   });
@@ -188,7 +188,7 @@ describe('PointService', () => {
       const result = service.charge(userId, amount);
 
       // then
-      expect(result).rejects.toBeInstanceOf(InvalidUserIdException);
+      expect(result).rejects.toThrow(InvalidUserIdException);
       expect(userPointRepository.selectById).not.toHaveBeenCalled();
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
@@ -204,7 +204,7 @@ describe('PointService', () => {
       const result = service.charge(userId, chargeAmount);
 
       // then
-      expect(result).rejects.toBeInstanceOf(InvalidChargeAmountException);
+      expect(result).rejects.toThrow(InvalidChargeAmountException);
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
@@ -219,7 +219,7 @@ describe('PointService', () => {
       const result = service.charge(userId, chargeAmount);
 
       // then
-      expect(result).rejects.toBeInstanceOf(InvalidChargeAmountException);
+      expect(result).rejects.toThrow(InvalidChargeAmountException);
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
