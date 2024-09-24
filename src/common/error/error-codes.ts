@@ -12,6 +12,13 @@ export class ErrorCodes {
 
   static readonly INVALID_CHARGE_AMOUNT = new ErrorCodes(
     400,
-    '충전 금액은 0보다 커야 합니다',
+    '포인트 충전 금액은 0보다 커야 합니다',
+  );
+
+  static readonly INVALID_USE_AMOUNT = new ErrorCodes(
+    400,
+    '포인트 사용 금액은 0보다 커야 합니다',
+  );
+
   );
 }
