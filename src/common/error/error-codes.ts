@@ -20,5 +20,8 @@ export class ErrorCodes {
     '포인트 사용 금액은 0보다 커야 합니다',
   );
 
+  static readonly NOT_ENOUGH_POINT = new ErrorCodes(
+    400,
+    '포인트 잔액이 부족합니다',
   );
 }
