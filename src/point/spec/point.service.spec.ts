@@ -280,5 +280,47 @@ describe('PointService', () => {
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
+
+    test(`포인트 사용 액수가 양수이고, 기존 포인트가 사용 포인트 이상인 경우
+            1. 기존 포인트에 사용 포인트를 차감한 값을 저장한다.
+            2. 포인트 내역에 포인트 사용 기록을 저장한다.
+            3. 기존 포인트에 사용 포인트를 차감한 UserPoint 객체를 반환한다.
+        `, async () => {
+      // given
+      const userId = 1;
+      const initialPoint = 1_000;
+      const useAmount = 500;
+      const updatedPoint = initialPoint - useAmount;
+
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+      const updatedUserPointStub = new UserPointVo(userId, updatedPoint);
+
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
+      userPointRepository.insertOrUpdate.mockResolvedValue(
+        updatedUserPointStub,
+      );
+
+      // when
+      const result = await service.use(userId, useAmount);
+      const expected = updatedUserPointStub;
+
+      // then
+      // 검증 - 1: 기존 포인트 조회가 호출되었는가?
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      // 검증 - 2: 기존 포인트에 사용 포인트를 차감한 값이 저장되는가?
+      expect(userPointRepository.insertOrUpdate).toHaveBeenCalledWith(
+        userId,
+        updatedPoint,
+      );
+      // 검증 - 3: 포인트 내역에 포인트 사용 기록을 저장하는가?
+      expect(pointHistoryRepository.insert).toHaveBeenCalledWith(
+        userId,
+        useAmount,
+        TransactionType.USE,
+        expect.any(Number),
+      );
+      // 검증 - 4: 기존 포인트에 사용 포인트를 차감한 UserPoint 객체가 반환되었는가?
+      expect(result).toEqual(expected);
+    });
   });
 });
