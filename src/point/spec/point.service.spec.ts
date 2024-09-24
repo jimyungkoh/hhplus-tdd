@@ -244,5 +244,41 @@ describe('PointService', () => {
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
+
+    test(`포인트 사용 액수가 음수인 경우,
+          InvalidUseAmountException이 발생해야 한다.`, () => {
+      // given
+      const userId = 1;
+      const useAmount = -1_000;
+
+      // when
+      const result = service.use(userId, useAmount);
+
+      // then
+      // 검증 - 1: InvalidUseAmountException 예외가 발생했는가?
+      expect(result).rejects.toThrow(InvalidUseAmountException);
+      // 검증 - 2: 포인트 조회, 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
+      expect(userPointRepository.selectById).not.toHaveBeenCalled();
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
+
+    test(`포인트 사용 액수가 0인 경우,
+          InvalidUseAmountException이 발생해야 한다.`, () => {
+      // given
+      const userId = 1;
+      const useAmount = 0;
+
+      // when
+      const result = service.use(userId, useAmount);
+
+      // then
+      // 검증 - 1: InvalidUseAmountException 예외가 발생했는가?
+      expect(result).rejects.toThrow(InvalidUseAmountException);
+      // 검증 - 2: 포인트 조회, 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
+      expect(userPointRepository.selectById).not.toHaveBeenCalled();
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+    });
   });
 });
