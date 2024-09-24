@@ -3,7 +3,9 @@ import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
 import { InvalidChargeAmountException } from '../exception/invalid-charge-amount.exception';
+import { InvalidUseAmountException } from '../exception/invalid-use-amount.exception';
 import { InvalidUserIdException } from '../exception/invalid-user-id.exception';
+import { NotEnoughPointException } from '../exception/not-enough-point.exception';
 import {
   PointHistory,
   PointHistoryVo,
@@ -321,6 +323,30 @@ describe('PointService', () => {
       );
       // 검증 - 4: 기존 포인트에 사용 포인트를 차감한 UserPoint 객체가 반환되었는가?
       expect(result).toEqual(expected);
+    });
+
+    test(`포인트 사용 액수가 양수인데, 기존 포인트가 사용 포인트 미만인 경우
+        NotEnoughPoint 예외를 발생시켜야 한다.`, async () => {
+      // given
+      const userId = 1;
+      const initialPoint = 1_000;
+      const useAmount = 500_000;
+
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
+
+      // when
+      const result = service.use(userId, useAmount);
+
+      // then
+      // 검증 - 1: 기존 포인트 조회가 호출되었는가?
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      // 검증 - 2: NotEnoughPointException 예외가 발생했는가?
+      expect(result).rejects.toThrow(NotEnoughPointException);
+      // 검증 - 3: 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
   });
 });

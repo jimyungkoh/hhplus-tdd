@@ -3,7 +3,9 @@ import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
 import { InvalidChargeAmountException } from './exception/invalid-charge-amount.exception';
+import { InvalidUseAmountException } from './exception/invalid-use-amount.exception';
 import { InvalidUserIdException } from './exception/invalid-user-id.exception';
+import { NotEnoughPointException } from './exception/not-enough-point.exception';
 import { PointHistory, TransactionType, UserPoint } from './model/point.model';
 
 @Injectable()
@@ -70,6 +72,9 @@ export class PointService {
     }
 
     const { point } = await this.userPointRepository.selectById(userId);
+
+    if (point < amount) throw new NotEnoughPointException();
+
     const consumeProcessPromises = Promise.all([
       this.userPointRepository.insertOrUpdate(userId, point - amount),
       this.pointHistoryRepository.insert(
