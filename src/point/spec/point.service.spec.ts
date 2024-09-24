@@ -50,7 +50,7 @@ describe('PointService', () => {
       // given
       const userId = 1;
 
-      const userPointStub: UserPoint = new UserPointVo(1, 1000);
+      const userPointStub: UserPoint = new UserPointVo(1, 1_000);
       userPointRepository.selectById.mockResolvedValue(userPointStub);
 
       // when
@@ -83,7 +83,7 @@ describe('PointService', () => {
           모든 포인트 내역을 반환해야 한다.`, () => {
       // given
       const historyStub: PointHistory[] = [
-        new PointHistoryVo(1, 1, TransactionType.CHARGE, 1000),
+        new PointHistoryVo(1, 1, TransactionType.CHARGE, 1_000),
         new PointHistoryVo(2, 1, TransactionType.USE, 500),
         new PointHistoryVo(3, 1, TransactionType.CHARGE, 300),
       ];
@@ -143,8 +143,8 @@ describe('PointService', () => {
           3. 기존 포인트에 충전 포인트를 더한 UserPoint 객체를 반환한다.`, async () => {
       // given
       const userId = 1;
-      const initialPoint = 1000;
-      const chargeAmount = 1000;
+      const initialPoint = 1_000;
+      const chargeAmount = 1_000;
       const updatedPoint = initialPoint + chargeAmount;
 
       const initialUserPointStub = new UserPointVo(userId, initialPoint);
@@ -182,7 +182,7 @@ describe('PointService', () => {
           InvalidUserIdException 예외를 발생시킨다`, () => {
       // given
       const userId = -1;
-      const amount = 1000;
+      const amount = 1_000;
 
       // when
       const result = service.charge(userId, amount);
@@ -198,7 +198,7 @@ describe('PointService', () => {
           InvalidChargeAmountException이 발생해야 한다.`, () => {
       // given
       const userId = 1;
-      const chargeAmount = -1000;
+      const chargeAmount = -1_000;
 
       // when
       const result = service.charge(userId, chargeAmount);
