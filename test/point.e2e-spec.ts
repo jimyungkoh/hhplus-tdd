@@ -342,6 +342,58 @@ describe('PointController (e2e)', () => {
         expectedUser2FinalPoint,
       );
     }, 10_000);
+
+    // 테스트 케이스: 처리 시간이 다른 사용자 요청의 독립성
+    // 작성 이유: 한 사용자의 요청 처리 시간이 길어져도 다른 사용자의 요청 처리에 영향을 주지 않는지 확인
+    test('한 사용자의 요청 처리 시간이 길어져도 다른 사용자의 요청 처리에 영향을 주지 않아야 한다', async () => {
+      const user1Id = 11; // 처리 시간이 긴 사용자
+      const user2Id = 12; // 일반 사용자
+      const initialPoint = 1000;
+      const chargeAmount = 500;
+
+      await userPointRepository.insertOrUpdate(user1Id, initialPoint);
+      await userPointRepository.insertOrUpdate(user2Id, initialPoint);
+
+      const user1SlowChargePromise = new Promise<void>((resolve) => {
+        setTimeout(async () => {
+          await request(app.getHttpServer())
+            .patch(`/point/${user1Id}/charge`)
+            .send({ amount: chargeAmount })
+            .expect(200);
+          resolve();
+        }, 1000); // 1초 지연
+      });
+
+      const startTime = Date.now();
+      const user2FastChargePromise = request(app.getHttpServer())
+        .patch(`/point/${user2Id}/charge`)
+        .send({ amount: chargeAmount })
+        .expect(200);
+
+      await Promise.all([user1SlowChargePromise, user2FastChargePromise]);
+
+      const endTime = Date.now();
+      const user2ProcessingTime = endTime - startTime;
+
+      expect(user2ProcessingTime).toBeLessThan(2000); // 2초 미만으로 수정
+
+      const user1FinalPoint = await request(app.getHttpServer())
+        .get(`/point/${user1Id}`)
+        .expect(200);
+
+      const user2FinalPoint = await request(app.getHttpServer())
+        .get(`/point/${user2Id}`)
+        .expect(200);
+
+      expect(user1FinalPoint.body).toHaveProperty(
+        'point',
+        initialPoint + chargeAmount,
+      );
+      expect(user2FinalPoint.body).toHaveProperty(
+        'point',
+        initialPoint + chargeAmount,
+      );
+    }, 10_000);
   });
   });
 });
