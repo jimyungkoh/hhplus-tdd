@@ -287,6 +287,61 @@ describe('PointController (e2e)', () => {
       );
     }, 40_000); // Increase timeout to 40 seconds
   });
+
+  describe('다중 사용자 동시성 테스트', () => {
+    // 테스트 케이스: 여러 사용자의 동시 포인트 충전 및 사용
+    // 작성 이유: 다중 사용자 환경에서 각 사용자의 요청이 독립적으로 처리되는지 확인
+    test('여러 사용자가 동시에 포인트를 충전하고 사용할 때 각 사용자의 요청이 독립적으로 처리되어야 한다', async () => {
+      const user1Id = 9;
+      const user2Id = 10;
+      const initialPoint = 2000;
+      const chargeAmount = 500;
+      const useAmount = 300;
+      const concurrentRequests = 3;
+
+      await userPointRepository.insertOrUpdate(user1Id, initialPoint);
+      await userPointRepository.insertOrUpdate(user2Id, initialPoint);
+
+      const user1ChargePromises = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .patch(`/point/${user1Id}/charge`)
+            .send({ amount: chargeAmount }),
+        );
+
+      const user2UsePromises = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .patch(`/point/${user2Id}/use`)
+            .send({ amount: useAmount }),
+        );
+
+      await Promise.all([...user1ChargePromises, ...user2UsePromises]);
+
+      const user1FinalPoint = await request(app.getHttpServer())
+        .get(`/point/${user1Id}`)
+        .expect(200);
+
+      const user2FinalPoint = await request(app.getHttpServer())
+        .get(`/point/${user2Id}`)
+        .expect(200);
+
+      const expectedUser1FinalPoint =
+        initialPoint + chargeAmount * concurrentRequests;
+      const expectedUser2FinalPoint =
+        initialPoint - useAmount * concurrentRequests;
+
+      expect(user1FinalPoint.body).toHaveProperty(
+        'point',
+        expectedUser1FinalPoint,
+      );
+      expect(user2FinalPoint.body).toHaveProperty(
+        'point',
+        expectedUser2FinalPoint,
+      );
+    }, 10_000);
   });
   });
 });
