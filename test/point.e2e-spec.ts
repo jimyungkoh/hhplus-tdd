@@ -159,6 +159,41 @@ describe('PointController (e2e)', () => {
         .expect(400);
     });
   });
+
+  describe('포인트 내역 조회 API', () => {
+    // 테스트 케이스: 유효한 사용자 ID로 포인트 내역 조회
+    // 작성 이유: 포인트 내역 조회 기능이 정상적으로 작동하는지 확인
+    test('유효한 사용자 ID로 포인트 내역을 조회하면 200 상태코드와 함께 내역 목록을 반환해야 한다', async () => {
+      const userId = 6;
+      const chargeAmount = 1000;
+      const useAmount = 500;
+
+      await userPointRepository.insertOrUpdate(userId, chargeAmount);
+      await pointHistoryRepository.insert(
+        userId,
+        chargeAmount,
+        TransactionType.CHARGE,
+        Date.now(),
+      );
+      await pointHistoryRepository.insert(
+        userId,
+        useAmount,
+        TransactionType.USE,
+        Date.now(),
+      );
+
+      const response = await request(app.getHttpServer())
+        .get(`/point/${userId}/histories`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBeTruthy();
+      expect(response.body.length).toBe(2);
+      expect(response.body[0]).toHaveProperty('userId', userId);
+      expect(response.body[0]).toHaveProperty('amount', chargeAmount);
+      expect(response.body[1]).toHaveProperty('userId', userId);
+      expect(response.body[1]).toHaveProperty('amount', useAmount);
+    });
+  });
   });
   });
 });
