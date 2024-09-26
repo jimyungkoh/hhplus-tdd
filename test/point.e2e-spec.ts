@@ -227,6 +227,37 @@ describe('PointController (e2e)', () => {
         expectedFinalPoint,
       );
     });
+
+    // 테스트 케이스: 동시 포인트 사용
+    // 작성 이유: 여러 요청이 동시에 처리될 때 경쟁 상태 없이 정확한 결과를 반환하는지 확인
+    test('여러 요청이 동시에 포인트를 사용할 때 경쟁 상태 없이 정확한 결과를 반환해야 한다', async () => {
+      const userId = 8;
+      const initialPoint = 10000;
+      const useAmount = 100;
+      const concurrentRequests = 10;
+
+      await userPointRepository.insertOrUpdate(userId, initialPoint);
+
+      const usePromises = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .patch(`/point/${userId}/use`)
+            .send({ amount: useAmount }),
+        );
+
+      await Promise.all(usePromises);
+
+      const finalPointResponse = await request(app.getHttpServer())
+        .get(`/point/${userId}`)
+        .expect(200);
+
+      const expectedFinalPoint = initialPoint - useAmount * concurrentRequests;
+      expect(finalPointResponse.body).toHaveProperty(
+        'point',
+        expectedFinalPoint,
+      );
+    });
   });
   });
 });
