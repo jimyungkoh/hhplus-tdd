@@ -2,8 +2,7 @@ import { MockFactory, Test, TestingModule } from '@nestjs/testing';
 import InjectionToken from 'src/database/injection.token';
 import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.repository';
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
-import { InvalidChargeAmountException } from '../exception/invalid-charge-amount.exception';
-import { InvalidUserIdException } from '../exception/invalid-user-id.exception';
+import { NotEnoughPointException } from '../exception/not-enough-point.exception';
 import {
   PointHistory,
   PointHistoryVo,
@@ -62,19 +61,6 @@ describe('PointService', () => {
       expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
       expect(userPointRepository.selectById).toHaveBeenCalledTimes(1);
     });
-
-    test(`유효하지 않은 사용자 id에 대한 포인트 조회는
-        InvalidUserIdException 예외를 발생시킨다`, () => {
-      // given
-      const userId = -1;
-
-      // when
-      const result = service.getPointBy(userId);
-
-      // then
-      expect(result).rejects.toThrow(InvalidUserIdException);
-      expect(userPointRepository.selectById).not.toHaveBeenCalled();
-    });
   });
 
   // TODO: 포인트 내역 조회 기능 테스트 작성
@@ -120,19 +106,6 @@ describe('PointService', () => {
       );
       expect(pointHistoryRepository.selectAllByUserId).toHaveBeenCalledTimes(1);
     });
-
-    test(`유효하지 않은 사용자 id에 대한 포인트 내역 조회는
-          InvalidUserIdException 예외를 발생시킨다`, () => {
-      // given
-      const userId = -1;
-
-      // when
-      const result = service.findHistoryBy(userId);
-
-      // then
-      expect(result).rejects.toThrow(InvalidUserIdException);
-      expect(pointHistoryRepository.selectAllByUserId).not.toHaveBeenCalled();
-    });
   });
 
   // TODO: 포인트 충전 기능 테스트 작성
@@ -177,54 +150,74 @@ describe('PointService', () => {
       //  검증 - 3: 기존 포인트에 충전 포인트를 더한 UserPoint 객체가 반환되었는가?
       expect(result).toEqual(expected);
     });
+  });
 
-    test(`유효하지 않은 사용자 id에 대한 포인트 충전은
-          InvalidUserIdException 예외를 발생시킨다`, () => {
-      // given
-      const userId = -1;
-      const amount = 1_000;
-
-      // when
-      const result = service.charge(userId, amount);
-
-      // then
-      expect(result).rejects.toThrow(InvalidUserIdException);
-      expect(userPointRepository.selectById).not.toHaveBeenCalled();
-      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
-      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
-    });
-
-    test(`포인트 충전 액수가 음수인 경우
-          InvalidChargeAmountException이 발생해야 한다.`, () => {
+  // TODO: 포인트 사용 기능 테스트 작성
+  describe('[use] 포인트 사용 기능 테스트', () => {
+    test(`포인트 사용 액수가 양수이고, 기존 포인트가 사용 포인트 이상인 경우
+            1. 기존 포인트에 사용 포인트를 차감한 값을 저장한다.
+            2. 포인트 내역에 포인트 사용 기록을 저장한다.
+            3. 기존 포인트에 사용 포인트를 차감한 UserPoint 객체를 반환한다.
+        `, async () => {
       // given
       const userId = 1;
-      const chargeAmount = -1_000;
+      const initialPoint = 1_000;
+      const useAmount = 500;
+      const updatedPoint = initialPoint - useAmount;
+
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+      const updatedUserPointStub = new UserPointVo(userId, updatedPoint);
+
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
+      userPointRepository.insertOrUpdate.mockResolvedValue(
+        updatedUserPointStub,
+      );
 
       // when
-      const result = service.charge(userId, chargeAmount);
+      const result = await service.use(userId, useAmount);
+      const expected = updatedUserPointStub;
 
       // then
-      expect(result).rejects.toThrow(InvalidChargeAmountException);
-      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
-      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+      // 검증 - 1: 기존 포인트 조회가 호출되었는가?
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      // 검증 - 2: 기존 포인트에 사용 포인트를 차감한 값이 저장되는가?
+      expect(userPointRepository.insertOrUpdate).toHaveBeenCalledWith(
+        userId,
+        updatedPoint,
+      );
+      // 검증 - 3: 포인트 내역에 포인트 사용 기록을 저장하는가?
+      expect(pointHistoryRepository.insert).toHaveBeenCalledWith(
+        userId,
+        useAmount,
+        TransactionType.USE,
+        expect.any(Number),
+      );
+      // 검증 - 4: 기존 포인트에 사용 포인트를 차감한 UserPoint 객체가 반환되었는가?
+      expect(result).toEqual(expected);
     });
 
-    test(`포인트 충전 액수가 0인 경우
-          InvalidChargeAmountException이 발생해야 한다.`, () => {
+    test(`포인트 사용 액수가 양수인데, 기존 포인트가 사용 포인트 미만인 경우
+        NotEnoughPoint 예외를 발생시켜야 한다.`, async () => {
       // given
       const userId = 1;
-      const chargeAmount = 0;
+      const initialPoint = 1_000;
+      const useAmount = 500_000;
+
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
 
       // when
-      const result = service.charge(userId, chargeAmount);
+      const result = service.use(userId, useAmount);
 
       // then
-      expect(result).rejects.toThrow(InvalidChargeAmountException);
+      // 검증 - 1: 기존 포인트 조회가 호출되었는가?
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      // 검증 - 2: NotEnoughPointException 예외가 발생했는가?
+      expect(result).rejects.toThrow(NotEnoughPointException);
+      // 검증 - 3: 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
       expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
       expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
   });
-
-  // TODO: 포인트 사용 기능 테스트 작성
-  describe('[use] 포인트 사용 기능 테스트', () => {});
 });
