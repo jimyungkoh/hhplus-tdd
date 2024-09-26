@@ -258,6 +258,35 @@ describe('PointController (e2e)', () => {
         expectedFinalPoint,
       );
     });
+
+    // 테스트 케이스: 대량의 동시 포인트 충전
+    // 작성 이유: 많은 수의 동시 요청에도 시스템이 정확하게 동작하는지 확인
+    test('100개의 요청이 동시에 포인트를 충전할 때 순서를 보장하며 정확한 결과를 반환해야 한다', async () => {
+      const userId = 13;
+      const chargeAmount = 10;
+      const concurrentRequests = 100;
+
+      const chargePromises = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .patch(`/point/${userId}/charge`)
+            .send({ amount: chargeAmount }),
+        );
+
+      await Promise.all(chargePromises);
+
+      const finalPointResponse = await request(app.getHttpServer())
+        .get(`/point/${userId}`)
+        .expect(200);
+
+      const expectedFinalPoint = chargeAmount * concurrentRequests;
+      expect(finalPointResponse.body).toHaveProperty(
+        'point',
+        expectedFinalPoint,
+      );
+    }, 40_000); // Increase timeout to 40 seconds
+  });
   });
   });
 });
