@@ -75,4 +75,35 @@ describe('PointController (e2e)', () => {
         .expect(400);
     });
   });
+
+  describe('포인트 충전 API', () => {
+    // 테스트 케이스: 유효한 사용자 ID와 금액으로 포인트 충전
+    // 작성 이유: 포인트 충전 기능이 정상적으로 작동하는지 확인
+    test('유효한 사용자 ID와 금액으로 포인트를 충전하면 200 상태코드와 함께 업데이트된 포인트 정보를 반환해야 한다', async () => {
+      const userId = 2;
+      const initialAmount = 500;
+      const chargeAmount = 1000;
+
+      await userPointRepository.insertOrUpdate(userId, initialAmount);
+      await pointHistoryRepository.insert(
+        userId,
+        initialAmount,
+        TransactionType.CHARGE,
+        Date.now(),
+      );
+
+      const response = await request(app.getHttpServer())
+        .patch(`/point/${userId}/charge`)
+        .send({ amount: chargeAmount })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', userId);
+      expect(response.body).toHaveProperty(
+        'point',
+        initialAmount + chargeAmount,
+      );
+      expect(response.body).toHaveProperty('updateMillis');
+    });
+
+  });
 });
