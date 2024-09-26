@@ -11,11 +11,16 @@ import {
   UserPointVo,
 } from '../model/point.model';
 import { PointService } from '../point.service';
-import pointHistoryRepositoryMock from './pointhistory.repository.mock';
-import userPointRepositoryMock from './userpoint.repository.mock';
+import { LockManager } from '../lock/timeout-spin.lock';
+import lockManagerMock from './mocks/user-lock.manager.mock';
+import userPointRepositoryMock from './mocks/userpoint.repository.mock';
+import pointHistoryRepositoryMock from './mocks/pointhistory.repository.mock';
+import { WithUserLockMock } from './mocks/with-user-lock.mock';
 
 const injectMocks: MockFactory = (token) => {
   switch (token) {
+    case LockManager:
+      return lockManagerMock;
     case InjectionToken.UserPointRepository:
       return userPointRepositoryMock;
     case InjectionToken.PointHistoryRepository:
@@ -27,7 +32,7 @@ describe('PointService', () => {
   let service: PointService;
   let userPointRepository: jest.Mocked<UserPointRepository>;
   let pointHistoryRepository: jest.Mocked<PointHistoryRepository>;
-
+  let userLockManager: jest.Mocked<LockManager>;
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [PointService],
@@ -38,6 +43,11 @@ describe('PointService', () => {
     service = module.get<PointService>(PointService);
     userPointRepository = module.get(InjectionToken.UserPointRepository);
     pointHistoryRepository = module.get(InjectionToken.PointHistoryRepository);
+    userLockManager = module.get(LockManager);
+
+    jest.mock('../lock/user-lock.decorator', () => ({
+      WithUserLock: WithUserLockMock,
+    }));
   });
 
   afterEach(() => {
@@ -122,6 +132,11 @@ describe('PointService', () => {
 
       const initialUserPointStub = new UserPointVo(userId, initialPoint);
       const updatedUserPointStub = new UserPointVo(userId, updatedPoint);
+      const mockLock = {
+        acquire: jest.fn(),
+        release: jest.fn(),
+      };
+      userLockManager.getLock.mockReturnValue(mockLock as any);
 
       userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
       userPointRepository.insertOrUpdate.mockResolvedValue(
@@ -197,7 +212,7 @@ describe('PointService', () => {
     });
 
     test(`포인트 사용 액수가 양수인데, 기존 포인트가 사용 포인트 미만인 경우
-        NotEnoughPoint 예외를 발생시켜야 한다.`, async () => {
+        NotEnoughPoint 예외를 발생시켜야 한다.`, () => {
       // given
       const userId = 1;
       const initialPoint = 1_000;
@@ -207,17 +222,17 @@ describe('PointService', () => {
 
       userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
 
-      // when
       const result = service.use(userId, useAmount);
 
-      // then
-      // 검증 - 1: 기존 포인트 조회가 호출되었는가?
-      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
-      // 검증 - 2: NotEnoughPointException 예외가 발생했는가?
-      expect(result).rejects.toThrow(NotEnoughPointException);
-      // 검증 - 3: 포인트 저장 또는 업데이트, 포인트 내역 저장이 호출되지 않았는가?
-      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
-      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+      // when
+      expect(result)
+        .rejects.toThrow(NotEnoughPointException)
+        .then(() => {
+          expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+          expect(userLockManager.getLock).toHaveBeenCalledWith(userId);
+          expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+          expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
+        });
     });
   });
 });
