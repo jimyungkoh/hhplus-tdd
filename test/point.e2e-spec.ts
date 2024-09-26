@@ -395,5 +395,80 @@ describe('PointController (e2e)', () => {
       );
     }, 10_000);
   });
+
+  // 테스트 케이스: 복합 시나리오 테스트
+  // 작성 이유: 여러 사용자의 다양한 포인트 충전 및 사용 시나리오가 올바르게 처리되는지 확인
+  test('여러 사용자의 포인트 충전 및 사용 시나리오가 올바르게 처리되어야 한다', async () => {
+    const users = [1, 2, 3];
+
+    // 시나리오 실행
+    const scenarios = [
+      { userId: 1, action: 'charge', amount: 4000, expectedStatus: 200 },
+      { userId: 2, action: 'charge', amount: 1000, expectedStatus: 200 },
+      { userId: 3, action: 'charge', amount: 2000, expectedStatus: 200 },
+      { userId: 1, action: 'use', amount: 100, expectedStatus: 200 },
+      { userId: 3, action: 'use', amount: 3000, expectedStatus: 400 },
+      { userId: 2, action: 'charge', amount: 3000, expectedStatus: 200 },
+      { userId: 3, action: 'use', amount: 6000, expectedStatus: 400 },
+      { userId: 1, action: 'charge', amount: 500, expectedStatus: 200 },
+    ];
+
+    for (const scenario of scenarios) {
+      await request(app.getHttpServer())
+        .patch(`/point/${scenario.userId}/${scenario.action}`)
+        .send({ amount: scenario.amount })
+        .expect(scenario.expectedStatus);
+    }
+
+    // 최종 포인트 확인
+    const finalPoints = await Promise.all(
+      users.map((userId) =>
+        request(app.getHttpServer()).get(`/point/${userId}`).expect(200),
+      ),
+    );
+
+    const expectedFinalPoints = [4400, 4000, 2000];
+    finalPoints.forEach((response, index) => {
+      expect(response.body).toHaveProperty('point', expectedFinalPoints[index]);
+    });
+
+    const expectedHistories = {
+      1: [
+        { userId: 1, amount: 4000, type: 0 }, // TransactionType.CHARGE
+        { userId: 1, amount: 100, type: 1 }, // TransactionType.USE
+        { userId: 1, amount: 500, type: 0 }, // TransactionType.CHARGE
+      ],
+      2: [
+        { userId: 2, amount: 1000, type: 0 }, // TransactionType.CHARGE
+        { userId: 2, amount: 3000, type: 0 }, // TransactionType.CHARGE
+      ],
+      3: [
+        { userId: 3, amount: 2000, type: 0 }, // TransactionType.CHARGE
+      ],
+    };
+
+    // 포인트 내역 확인
+    const histories = await Promise.all(
+      users.map((userId) =>
+        request(app.getHttpServer())
+          .get(`/point/${userId}/histories`)
+          .expect(200),
+      ),
+    );
+
+    histories.forEach((history, index) => {
+      const userId = users[index];
+      expect(history.body).toHaveLength(expectedHistories[userId].length);
+      expectedHistories[userId].forEach(
+        (
+          expectedTransaction: TransactionType,
+          transactionIndex: string | number,
+        ) => {
+          expect(history.body[transactionIndex]).toMatchObject(
+            expectedTransaction,
+          );
+        },
+      );
+    });
   });
 });
