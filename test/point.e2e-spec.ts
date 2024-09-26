@@ -116,6 +116,33 @@ describe('PointController (e2e)', () => {
         .send({ amount: invalidChargeAmount })
         .expect(400);
     });
+
+    // 테스트 케이스: 포인트 충전 후 총 포인트가 2,000,000을 초과하는 경우
+    // 작성 이유: 최대 포인트 제한을 초과하는 경우 적절한 예외 처리를 하는지 확인
+    test('포인트 충전 후 총 포인트가 2,000,000을 초과하는 경우 MaximumPointException을 발생시켜야 한다', async () => {
+      const userId = 1;
+      const initialPoint = 1_900_000;
+      const chargeAmount = 200_000;
+
+      await userPointRepository.insertOrUpdate(userId, initialPoint);
+      await pointHistoryRepository.insert(
+        userId,
+        initialPoint,
+        TransactionType.CHARGE,
+        Date.now(),
+      );
+      await request(app.getHttpServer())
+        .patch(`/point/${userId}/charge`)
+        .send({ amount: chargeAmount })
+        .expect(400);
+
+      const finalPoint = await userPointRepository.selectById(userId);
+      expect(finalPoint.point).toBe(initialPoint);
+
+      const history = await pointHistoryRepository.selectAllByUserId(userId);
+      expect(history).toHaveLength(1);
+      expect(history[0].amount).toBe(initialPoint);
+    });
   });
 
   describe('포인트 사용 API', () => {
