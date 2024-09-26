@@ -105,5 +105,17 @@ describe('PointController (e2e)', () => {
       expect(response.body).toHaveProperty('updateMillis');
     });
 
+    // 테스트 케이스: 유효하지 않은 금액으로 포인트 충전 시도
+    // 작성 이유: 잘못된 충전 금액에 대해 적절한 에러 처리를 하는지 확인
+    test('유효하지 않은 금액으로 포인트를 충전하려고 하면 400 에러를 반환해야 한다', async () => {
+      const userId = 3;
+      const invalidChargeAmount = -100;
+
+      await request(app.getHttpServer())
+        .patch(`/point/${userId}/charge`)
+        .send({ amount: invalidChargeAmount })
+        .expect(400);
+    });
+  });
   });
 });
