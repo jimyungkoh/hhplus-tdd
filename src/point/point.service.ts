@@ -6,6 +6,7 @@ import { NotEnoughPointException } from './exception/not-enough-point.exception'
 import { PointHistory, TransactionType, UserPoint } from './model/point.model';
 import { WithUserLock } from './lock/user-lock.decorator';
 import { LockManager } from './lock/timeout-spin.lock';
+import { MaximumPointException } from './exception/maximum-point.exception';
 
 @Injectable()
 export class PointService {
@@ -35,6 +36,8 @@ export class PointService {
   @WithUserLock()
   async charge(userId: number, amount: number): Promise<UserPoint> {
     const { point } = await this.userPointRepository.selectById(userId);
+
+    if (point + amount > 2_000_000) throw new MaximumPointException();
 
     const chargeProcessPromises = Promise.all([
       this.userPointRepository.insertOrUpdate(userId, point + amount),
