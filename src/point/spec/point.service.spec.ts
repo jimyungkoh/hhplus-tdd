@@ -56,6 +56,8 @@ describe('PointService', () => {
   });
 
   describe('[getPointBy] 포인트 조회 기능 테스트', () => {
+    // 테스트 케이스: 존재하는 사용자 ID로 포인트 조회
+    // 작성 이유: 사용자의 포인트 정보를 정확히 반환하는지 확인
     test('존재하는 사용자 id에 대한 포인트 조회는 성공한다', () => {
       // given
       const userId = 1;
@@ -76,6 +78,8 @@ describe('PointService', () => {
 
   // TODO: 포인트 내역 조회 기능 테스트 작성
   describe('[findHistoryBy] 포인트 내역 조회 기능 테스트', () => {
+    // 테스트 케이스: 사용자 ID에 대응하는 포인트 내역이 있는 경우
+    // 작성 이유: 모든 포인트 내역을 정확히 반환하는지 확인
     test(`사용자 id에 대응하는 포인트 내역이 있는 경우,
           모든 포인트 내역을 반환해야 한다.`, () => {
       // given
@@ -99,6 +103,8 @@ describe('PointService', () => {
       expect(pointHistoryRepository.selectAllByUserId).toHaveBeenCalledTimes(1);
     });
 
+    // 테스트 케이스: 사용자 ID에 대응하는 포인트 내역이 없는 경우
+    // 작성 이유: 포인트 내역이 없을 때 빈 배열을 반환하는지 확인
     test(`사용자 id에 대응하는 포인트 내역이 없는 경우,
           빈 배열을 반환해야 한다.`, () => {
       // given
@@ -121,6 +127,8 @@ describe('PointService', () => {
 
   // TODO: 포인트 충전 기능 테스트 작성
   describe('[charge] 포인트 충전 기능 테스트', () => {
+    // 테스트 케이스: 유효한 포인트 충전
+    // 작성 이유: 정상적인 포인트 충전 과정을 확인
     test(`포인트 충전 액수가 양수이고 총 포인트가 2,000,000 이하인 경우
           1. 기존 포인트에 충전 포인트를 더한 값을 저장한다.
           2. 포인트 내역에 포인트 충전 기록을 저장한다.
@@ -163,6 +171,8 @@ describe('PointService', () => {
       expect(result).toEqual(expected);
     });
 
+    // 테스트 케이스: 최대 포인트 초과 충전 시도
+    // 작성 이유: 최대 포인트 제한을 초과하는 경우 예외 발생을 확인
     test(`포인트 충전 후 총 포인트가 2,000,000을 초과하는 경우
           MaximumPointException을 발생시켜야 한다.`, async () => {
       // given
@@ -185,6 +195,8 @@ describe('PointService', () => {
 
   // TODO: 포인트 사용 기능 테스트 작성
   describe('[use] 포인트 사용 기능 테스트', () => {
+    // 테스트 케이스: 유효한 포인트 사용
+    // 작성 이유: 정상적인 포인트 사용 과정을 확인
     test(`포인트 사용 액수가 양수이고, 기존 포인트가 사용 포인트 이상인 경우
             1. 기존 포인트에 사용 포인트를 차감한 값을 저장한다.
             2. 포인트 내역에 포인트 사용 기록을 저장한다.
@@ -227,6 +239,8 @@ describe('PointService', () => {
       expect(result).toEqual(expected);
     });
 
+    // 테스트 케이스: 잔액 부족 시 포인트 사용
+    // 작성 이유: 잔액이 부족한 경우 예외 발생을 확인
     test(`포인트 사용 액수가 양수인데, 기존 포인트가 사용 포인트 미만인 경우
         NotEnoughPoint 예외를 발생시켜야 한다.`, () => {
       // given
