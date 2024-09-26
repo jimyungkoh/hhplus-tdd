@@ -4,10 +4,14 @@ import { PointHistoryRepository } from 'src/database/pointhistory/pointhistory.r
 import { UserPointRepository } from 'src/database/userpoint/userpoint.repository';
 import { NotEnoughPointException } from './exception/not-enough-point.exception';
 import { PointHistory, TransactionType, UserPoint } from './model/point.model';
+import { WithUserLock } from './lock/user-lock.decorator';
+import { LockManager } from './lock/timeout-spin.lock';
 
 @Injectable()
 export class PointService {
   constructor(
+    readonly lockManager: LockManager,
+
     @Inject(InjectionToken.UserPointRepository)
     private readonly userPointRepository: UserPointRepository,
 
@@ -28,6 +32,7 @@ export class PointService {
   }
 
   // TODO: 포인트 충전 기능 구현
+  @WithUserLock()
   async charge(userId: number, amount: number): Promise<UserPoint> {
     const { point } = await this.userPointRepository.selectById(userId);
 
@@ -47,6 +52,7 @@ export class PointService {
   }
 
   // TODO: 포인트 사용 기능 구현
+  @WithUserLock()
   async use(userId: number, amount: number): Promise<UserPoint> {
     const { point } = await this.userPointRepository.selectById(userId);
 
