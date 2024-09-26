@@ -117,6 +117,7 @@ describe('PointController (e2e)', () => {
         .expect(400);
     });
   });
+
   describe('포인트 사용 API', () => {
     // 테스트 케이스: 충분한 잔액으로 포인트 사용
     // 작성 이유: 포인트 사용 기능이 정상적으로 작동하는지 확인
@@ -141,6 +142,21 @@ describe('PointController (e2e)', () => {
       expect(response.body).toHaveProperty('id', userId);
       expect(response.body).toHaveProperty('point', initialPoint - useAmount);
       expect(response.body).toHaveProperty('updateMillis');
+    });
+
+    // 테스트 케이스: 잔액 부족으로 포인트 사용 실패
+    // 작성 이유: 잔액 부족 시 적절한 에러 처리를 하는지 확인
+    test('잔액이 부족한 경우 포인트 사용 시 400 에러를 반환해야 한다', async () => {
+      const userId = 5;
+      const initialPoint = 100;
+      const useAmount = 500;
+
+      await userPointRepository.insertOrUpdate(userId, initialPoint);
+
+      await request(app.getHttpServer())
+        .patch(`/point/${userId}/use`)
+        .send({ amount: useAmount })
+        .expect(400);
     });
   });
   });
