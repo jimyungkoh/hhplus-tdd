@@ -8,6 +8,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      whitelist: true,
     }),
   );
   await app.listen(3000);
