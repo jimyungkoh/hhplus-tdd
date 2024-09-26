@@ -31,4 +31,11 @@ export class ErrorCodes {
     400,
     '포인트 잔액이 부족합니다',
   );
+  /**
+   * 포인트 최대 잔액 오류
+   */
+  static readonly MAXIMUM_POINT: ErrorCodes = new ErrorCodes(
+    400,
+    '포인트 잔고 최대 잔액은 2,000,000 포인트 입니다',
+  );
 }

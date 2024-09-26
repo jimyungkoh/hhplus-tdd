@@ -16,6 +16,7 @@ import lockManagerMock from './mocks/user-lock.manager.mock';
 import userPointRepositoryMock from './mocks/userpoint.repository.mock';
 import pointHistoryRepositoryMock from './mocks/pointhistory.repository.mock';
 import { WithUserLockMock } from './mocks/with-user-lock.mock';
+import { MaximumPointException } from '../exception/maximum-point.exception';
 
 const injectMocks: MockFactory = (token) => {
   switch (token) {
@@ -120,7 +121,7 @@ describe('PointService', () => {
 
   // TODO: 포인트 충전 기능 테스트 작성
   describe('[charge] 포인트 충전 기능 테스트', () => {
-    test(`포인트 충전 액수가 양수인 경우
+    test(`포인트 충전 액수가 양수이고 총 포인트가 2,000,000 이하인 경우
           1. 기존 포인트에 충전 포인트를 더한 값을 저장한다.
           2. 포인트 내역에 포인트 충전 기록을 저장한다.
           3. 기존 포인트에 충전 포인트를 더한 UserPoint 객체를 반환한다.`, async () => {
@@ -148,22 +149,37 @@ describe('PointService', () => {
       const expected = updatedUserPointStub;
 
       // then
-      //  검증 - 1-1: 기존 포인트 조회가 호출되었는가?
       expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
-      //  검증 - 1-2: 기존 포인트에 충전 포인트를 더한 값이 저장되는가?
       expect(userPointRepository.insertOrUpdate).toHaveBeenCalledWith(
         userId,
         updatedPoint,
       );
-      //  검증 - 2. 포인트 내역에 포인트 충전 기록을 저장하는가?
       expect(pointHistoryRepository.insert).toHaveBeenCalledWith(
         userId,
         chargeAmount,
         TransactionType.CHARGE,
         expect.any(Number),
       );
-      //  검증 - 3: 기존 포인트에 충전 포인트를 더한 UserPoint 객체가 반환되었는가?
       expect(result).toEqual(expected);
+    });
+
+    test(`포인트 충전 후 총 포인트가 2,000,000을 초과하는 경우
+          MaximumPointException을 발생시켜야 한다.`, async () => {
+      // given
+      const userId = 1;
+      const initialPoint = 1_900_000;
+      const chargeAmount = 200_000;
+
+      const initialUserPointStub = new UserPointVo(userId, initialPoint);
+      userPointRepository.selectById.mockResolvedValue(initialUserPointStub);
+
+      // when & then
+      await expect(service.charge(userId, chargeAmount)).rejects.toThrow(
+        MaximumPointException,
+      );
+      expect(userPointRepository.selectById).toHaveBeenCalledWith(userId);
+      expect(userPointRepository.insertOrUpdate).not.toHaveBeenCalled();
+      expect(pointHistoryRepository.insert).not.toHaveBeenCalled();
     });
   });
 
