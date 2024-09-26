@@ -194,6 +194,39 @@ describe('PointController (e2e)', () => {
       expect(response.body[1]).toHaveProperty('amount', useAmount);
     });
   });
+
+  describe('동시성 테스트', () => {
+    // 테스트 케이스: 동시 포인트 충전
+    // 작성 이유: 여러 요청이 동시에 처리될 때 경쟁 상태 없이 정확한 결과를 반환하는지 확인
+    test('여러 요청이 동시에 포인트를 충전할 때 경쟁 상태 없이 정확한 결과를 반환해야 한다', async () => {
+      const userId = 7;
+      const initialPoint = 1000;
+      const chargeAmount = 100;
+      const concurrentRequests = 10;
+
+      await userPointRepository.insertOrUpdate(userId, initialPoint);
+
+      const chargePromises = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .patch(`/point/${userId}/charge`)
+            .send({ amount: chargeAmount }),
+        );
+
+      await Promise.all(chargePromises);
+
+      const finalPointResponse = await request(app.getHttpServer())
+        .get(`/point/${userId}`)
+        .expect(200);
+
+      const expectedFinalPoint =
+        initialPoint + chargeAmount * concurrentRequests;
+      expect(finalPointResponse.body).toHaveProperty(
+        'point',
+        expectedFinalPoint,
+      );
+    });
   });
   });
 });
