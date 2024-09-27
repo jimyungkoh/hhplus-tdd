@@ -56,70 +56,74 @@ Node.js의 싱글 스레드 이벤트 루프 모델에서는 전통적인 의미
 
 TimeoutSpinLock 클래스는 다음과 같이 구현되었습니다:
 
+```typescript
 export class TimeoutSpinLock {
-  // 락의 상태를 나타내는 boolean 값
-  private locked = false;
+    // 락의 상태를 나타내는 boolean 값
+    private locked = false;
 
-  // 락을 획득하는 비동기 메서드
-  // 지정된 시간 내에 락을 획득하지 못하면 에러를 발생시킴
-  async acquire(timeoutMs: number = 50_000): Promise<void> {
-    const startTime = Date.now();
-    while (!this.tryLock()) {
-      if (Date.now() - startTime > timeoutMs) {
-        throw new Error('Lock acquisition timed out');
-      }
-      await new Promise((resolve) => setTimeout(resolve, 10));
+    // 락을 획득하는 비동기 메서드
+    // 지정된 시간 내에 락을 획득하지 못하면 에러를 발생시킴
+    async acquire(timeoutMs: number = 50_000): Promise<void> {
+        const startTime = Date.now();
+        while (!this.tryLock()) {
+            if (Date.now() - startTime > timeoutMs) {
+                throw new Error('Lock acquisition timed out');
+            }
+            await new Promise((resolve) => setTimeout(resolve, 10));
+        }
     }
-  }
 
-  // 락 획득을 시도하는 내부 메서드
-  // 락이 해제 상태면 락을 획득하고 true를 반환, 아니면 false를 반환
-  private tryLock(): boolean {
-    if (!this.locked) {
-      this.locked = true;
-      return true;
+    // 락 획득을 시도하는 내부 메서드
+    // 락이 해제 상태면 락을 획득하고 true를 반환, 아니면 false를 반환
+    private tryLock(): boolean {
+        if (!this.locked) {
+            this.locked = true;
+            return true;
+        }
+        return false;
     }
-    return false;
-  }
 
-  // 락을 해제하는 메서드
-  release(): void {
-    this.locked = false;
-  }
+    // 락을 해제하는 메서드
+    release(): void {
+        this.locked = false;
+    }
 }
+```
 
 이 구현은 비동기 환경에서 효율적으로 동작하며, 타임아웃 처리를 통해 시스템 안정성을 보장합니다.
 
 락 관리를 위해 Map을 사용한 LockManager 클래스도 구현했습니다:
 
+```typescript
 export class LockManager {
-  // 싱글톤 인스턴스를 저장하는 정적 변수
-  private static instance: LockManager;
-  // 사용자 ID를 키로, TimeoutSpinLock 객체를 값으로 가지는 Map
-  readonly locks: Map<number, TimeoutSpinLock>;
+    // 싱글톤 인스턴스를 저장하는 정적 변수
+    private static instance: LockManager;
+    // 사용자 ID를 키로, TimeoutSpinLock 객체를 값으로 가지는 Map
+    readonly locks: Map<number, TimeoutSpinLock>;
 
-  // 프라이빗 생성자: 외부에서 직접 인스턴스 생성을 방지
-  private constructor() {
-    this.locks = new Map();
-  }
-
-  // 싱글톤 인스턴스를 반환하는 정적 메서드
-  static getInstance(): LockManager {
-    if (!LockManager.instance) {
-      LockManager.instance = new LockManager();
+    // 프라이빗 생성자: 외부에서 직접 인스턴스 생성을 방지
+    private constructor() {
+        this.locks = new Map();
     }
-    return LockManager.instance;
-  }
 
-  // 주어진 ID에 대한 락 객체를 반환하는 메서드
-  // 해당 ID의 락이 없으면 새로 생성하여 반환
-  getLock(id: number): TimeoutSpinLock {
-    if (!this.locks.has(id)) {
-      this.locks.set(id, new TimeoutSpinLock());
+    // 싱글톤 인스턴스를 반환하는 정적 메서드
+    static getInstance(): LockManager {
+        if (!LockManager.instance) {
+            LockManager.instance = new LockManager();
+        }
+        return LockManager.instance;
     }
-    return this.locks.get(id);
-  }
+
+    // 주어진 ID에 대한 락 객체를 반환하는 메서드
+    // 해당 ID의 락이 없으면 새로 생성하여 반환
+    getLock(id: number): TimeoutSpinLock {
+        if (!this.locks.has(id)) {
+            this.locks.set(id, new TimeoutSpinLock());
+        }
+        return this.locks.get(id);
+    }
 }
+```
 
 LockManager는 싱글톤 패턴을 사용하여 전역적으로 일관된 락 관리를 보장하며, Map을 통해 각 사용자별로 독립적인 락을 관리합니다.
 
@@ -166,18 +170,18 @@ Node.js의 이벤트 루프 특성을 고려한 타임아웃 스핀락의 동작
 
 3. 처리 시간이 다른 사용자 요청의 독립성 시나리오
 
-   ````typescript
-   test('한 사용자의 요청 처리 시간이 길어져도 다른 사용자의 요청 처리에 영향을 주지 않아야 한다', async () => {
-     const user1Id = 11; // 처리 시간이 긴 사용자
-     const user2Id = 12; // 일반 사용자
-     // ... (테스트 코드)
-   }, 10_000);
-   ```
-   설명: 이 테스트는 한 사용자의 요청 처리가 지연될 때 다른 사용자의 요청이 영향을 받지 않는지 확인합니다. 한 사용자의 요청에 1초의 지연을 추가하고, 다른 사용자의 요청이 2초 미만에 처리되는지 검증합니다.
+  ```typescript
+  test('한 사용자의 요청 처리 시간이 길어져도 다른 사용자의 요청 처리에 영향을 주지 않아야 한다', async () => {
+    const user1Id = 11; // 처리 시간이 긴 사용자
+    const user2Id = 12; // 일반 사용자
+    // ... (테스트 코드)
+  }, 10_000);
+  ```
 
-   ````
+  설명: 이 테스트는 한 사용자의 요청 처리가 지연될 때 다른 사용자의 요청이 영향을 받지 않는지 확인합니다. 한 사용자의 요청에 1초의 지연을 추가하고, 다른 사용자의 요청이 2초 미만에 처리되는지 검증합니다.
 
 4. 복합 시나리오 테스트
+
    ```typescript
    test('여러 사용자의 포인트 충전 및 사용 시나리오가 올바르게 처리되어야 한다', async () => {
      const users = [1, 2, 3];
